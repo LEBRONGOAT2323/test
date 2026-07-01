@@ -222,7 +222,6 @@
             win.document.write(html);
             win.document.close();
         } catch (err) {
-            console.error(err);
             alert("Security block: This game cannot be launched from a local file. Use GitHub Pages.");
         }
     }
@@ -286,7 +285,6 @@
             document.getElementById('gameSearch').placeholder = `SEARCH ${gamesData.length} GAMES...`;
             renderGames(gamesData);
         } catch (err) {
-            console.error(err);
             grid.innerHTML = `
                 <div class="status-msg" style="color: #ff4444; opacity: 1;">
                     <i class="fa-solid fa-triangle-exclamation"></i><br>
