@@ -19,6 +19,7 @@
             overflow-x: hidden;
         }
 
+        /* Starfield Effect */
         #stars { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
         .star { position: absolute; background: rgba(255,255,255,0.7); border-radius: 50%; animation: drift linear infinite; }
         @keyframes drift { from { transform: translateY(0); } to { transform: translateY(-120vh); } }
@@ -133,6 +134,7 @@
         .game-card:hover {
             transform: translateY(-8px);
             background: rgba(255,255,255,0.06);
+            border-color: var(--accent);
         }
 
         .game-image {
@@ -140,6 +142,11 @@
             height: 100%;
             object-fit: cover;
             transition: all 0.3s;
+            opacity: 0.7;
+        }
+        .game-card:hover .game-image {
+            opacity: 1;
+            transform: scale(1.1);
         }
 
         .game-overlay {
@@ -148,7 +155,7 @@
             left: 0;
             right: 0;
             padding: 12px 10px;
-            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 60%, transparent 100%);
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
             z-index: 2;
         }
 
@@ -157,7 +164,6 @@
             font-weight: 700;
             letter-spacing: 1.5px;
             text-transform: uppercase;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
         }
 
         .game-category {
@@ -174,15 +180,13 @@
             display: none;
         }
 
-        .error-message {
-            grid-column: 1/-1;
+        .status-msg {
+            grid-column: 1 / -1;
             text-align: center;
-            padding: 40px;
-            opacity: 0.5;
-            font-size: 0.8rem;
-            letter-spacing: 2px;
-            border: 1px dashed rgba(255,255,255,0.1);
-            border-radius: 20px;
+            padding: 60px;
+            opacity: 0.4;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
         }
     </style>
 </head>
@@ -198,17 +202,17 @@
         </button>
         <div class="logo-section">
             <h1 class="logo" id="logo">PHANTOM</h1>
-            <div class="page-subtitle">GAMES</div>
+            <div class="page-subtitle">IMPORT ENGINE</div>
         </div>
     </div>
 
     <div class="search-container">
         <i class="fa-solid fa-magnifying-glass" id="searchIcon"></i>
-        <input type="text" class="search-input" id="gameSearch" placeholder="SEARCH REPOSITORY..." oninput="filterGames()">
+        <input type="text" class="search-input" id="gameSearch" placeholder="CONNECTING TO SOURCE..." oninput="filterGames()">
     </div>
 
     <div class="games-grid" id="gamesGrid">
-        <div class="error-message">CONNECTING TO REPOSITORY...</div>
+        <div class="status-msg">FETCHING LIVE GAME LIST...</div>
     </div>
 </div>
 
@@ -217,98 +221,92 @@
 <script>
     let gamesData = [];
     
-    // UPDATED: Reliable repository URLs
-    // We use a high-availability CDN (jsDelivr) for the game files
-    const FILE_BASE = 'https://cdn.jsdelivr.net';
-    const LIST_URL = 'https://cdn.jsdelivr.net';
+    // The "URL thing" - pointing directly to the source repository API
+    const SOURCE_API = 'https://api.github.com/repos/bubbls/ugs-singlefile/contents/UGS-Files';
 
-    /* Launch logic */
-    function launchGame(url, name) {
-        // Simple redirect for remote games
-        if(url.startsWith('http')) {
-            window.open(url, '_blank');
-            return;
+    /* Launch logic: Fetch raw HTML and write to new window */
+    async function launchGame(downloadUrl, name) {
+        try {
+            const res = await fetch(downloadUrl);
+            if (!res.ok) throw new Error("Could not reach source");
+            const html = await res.text();
+            
+            const win = window.open('about:blank', '_blank');
+            win.document.open();
+            win.document.write(html);
+            win.document.close();
+        } catch (err) {
+            alert("Failed to launch " + name + ": " + err.message);
         }
+    }
 
-        // Fetching the individual file content
-        const fullUrl = FILE_BASE + url;
-        fetch(fullUrl)
-            .then(res => {
-                if(!res.ok) throw new Error("File not found");
-                return res.text();
-            })
-            .then(html => {
-                const win = window.open('about:blank', '_blank');
-                win.document.open();
-                win.document.write(html);
-                win.document.close();
-            })
-            .catch(err => {
-                alert("Error launching " + name + ": " + err.message);
-            });
+    /* Name Normalizer: CamelCase -> Space Separated */
+    function normalizeName(filename) {
+        let name = filename.replace(/\.[^/.]+$/, ""); // Remove .html
+        name = name.replace(/([A-Z])/g, ' $1').trim(); // Add spaces
+        return name.toUpperCase();
+    }
+
+    /* Image System: Generates "Normal" visual cards */
+    function getGameImage(name) {
+        // High quality placeholder that matches the dark PHANTOM theme
+        return `https://placehold.co/400x400/111111/ffffff?text=${encodeURIComponent(name)}`;
     }
 
     /* Rendering */
     function renderGames(games) {
         const grid = document.getElementById('gamesGrid');
         if (!games || games.length === 0) {
-            grid.innerHTML = '<div class="error-message">NO GAMES FOUND IN REPOSITORY</div>';
+            grid.innerHTML = '<div class="status-msg">NO GAMES FOUND AT SOURCE</div>';
             return;
         }
 
-        grid.innerHTML = games.map(game => {
-            const name = game.name || "Untitled";
-            // Normal image handling with high-quality fallback
-            const img = game.img || `https://placehold.co/400x400/1a1a1a/ffffff?text=${encodeURIComponent(name)}`;
-            
+        grid.innerHTML = games.map(file => {
+            const cleanName = normalizeName(file.name);
             return `
-                <div class="game-card" onclick="launchGame('${game.url}', '${name}')">
-                    <img src="${img}" alt="${name}" class="game-image" loading="lazy">
+                <div class="game-card" onclick="launchGame('${file.download_url}', '${cleanName}')">
+                    <img src="${getGameImage(cleanName)}" alt="${cleanName}" class="game-image" loading="lazy">
                     <div class="game-overlay">
-                        <div class="game-name">${name}</div>
-                        <div class="game-category">${game.category || 'ACTION'}</div>
+                        <div class="game-name">${cleanName}</div>
+                        <div class="game-category">REMOTE CONTENT</div>
                     </div>
                 </div>
             `;
         }).join('');
     }
 
-    /* Fetching logic with Error Details */
-    async function loadGames() {
-        try {
-            console.log("Attempting to fetch:", LIST_URL);
-            const res = await fetch(LIST_URL);
-            
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-            }
-            
-            gamesData = await res.json();
-            renderGames(gamesData);
-            
-        } catch (err) {
-            console.error("Fetch Error Detail:", err);
-            document.getElementById('gamesGrid').innerHTML = `
-                <div class="error-message">
-                    <i class="fa-solid fa-triangle-exclamation"></i><br><br>
-                    REPOSITORY FETCH FAILED<br>
-                    <span style="font-size: 0.6rem; opacity: 0.5;">${err.message}</span><br><br>
-                    <button onclick="loadGames()" style="background: var(--accent); border: none; color: black; padding: 5px 15px; font-family: inherit; cursor: pointer; border-radius: 5px;">RETRY</button>
-                </div>
-            `;
-        }
-    }
-
+    /* Filter */
     function filterGames() {
         const query = document.getElementById('gameSearch').value.toLowerCase();
-        const filtered = gamesData.filter(game => 
-            game.name.toLowerCase().includes(query) || (game.category && game.category.toLowerCase().includes(query))
+        const filtered = gamesData.filter(file => 
+            file.name.toLowerCase().includes(query)
         );
         renderGames(filtered);
     }
 
-    /* Visual Init (Starfield/Cursor) */
+    /* Live Fetch from the "Url Thing" */
+    async function loadGames() {
+        try {
+            const res = await fetch(SOURCE_API);
+            const data = await res.json();
+            
+            // Only import the .html game files
+            gamesData = data.filter(item => item.name.endsWith('.html'));
+            
+            document.getElementById('gameSearch').placeholder = `SEARCH ${gamesData.length} IMPORTED GAMES...`;
+            renderGames(gamesData);
+        } catch (err) {
+            document.getElementById('gamesGrid').innerHTML = `
+                <div class="status-msg" style="color: #ff4444;">
+                    IMPORT FAILED: ${err.message}<br>
+                    <span style="font-size: 0.5rem; opacity: 0.6;">API LIMITS OR CONNECTION ERROR</span>
+                </div>`;
+        }
+    }
+
+    /* Background & Effects */
     function initVisuals() {
+        // Starfield
         const sc = document.getElementById("stars");
         for (let i = 0; i < 90; i++) {
             const s = document.createElement("div");
@@ -320,13 +318,16 @@
             sc.appendChild(s);
         }
 
+        // Custom Cursor
         const dot = document.getElementById('phantom-dot');
         document.addEventListener('mousemove', e => {
-            if (localStorage.getItem('phantom_cursor') === 'dot') {
+            if(localStorage.getItem('phantom_cursor') === 'dot') {
+                const accent = localStorage.getItem('phantom_accent') || '#ff8c00';
                 dot.style.display = 'block';
                 dot.style.left = e.clientX + 'px';
                 dot.style.top = e.clientY + 'px';
-                dot.style.background = localStorage.getItem('phantom_accent') || '#ff8c00';
+                dot.style.background = accent;
+                dot.style.boxShadow = `0 0 15px ${accent}`;
             }
         });
     }
@@ -335,7 +336,7 @@
         initVisuals();
         const accent = localStorage.getItem('phantom_accent') || '#ff8c00';
         document.documentElement.style.setProperty('--accent', accent);
-        document.getElementById('logo').style.textShadow = `0 0 15px ${accent}66`;
+        document.getElementById('logo').style.textShadow = `0 0 15px ${accent}88`;
         loadGames();
     })();
 </script>
