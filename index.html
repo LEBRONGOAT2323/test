@@ -19,7 +19,7 @@
             overflow-x: hidden;
         }
 
-        /* Starfield Effect */
+        /* Starfield Background */
         #stars { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
         .star { position: absolute; background: rgba(255,255,255,0.7); border-radius: 50%; animation: drift linear infinite; }
         @keyframes drift { from { transform: translateY(0); } to { transform: translateY(-120vh); } }
@@ -48,23 +48,7 @@
             margin-bottom: 48px;
         }
 
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: rgba(255,255,255,0.5);
-            font-size: 0.7rem;
-            letter-spacing: 2px;
-            text-decoration: none;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-family: 'Orbitron', sans-serif;
-            transition: color 0.2s;
-        }
-        .back-btn:hover { color: var(--accent); }
-
-        .logo-section { text-align: right; }
+        .logo-section { text-align: left; }
         .logo {
             font-size: clamp(2rem, 5vw, 3.5rem);
             font-weight: 900;
@@ -135,6 +119,7 @@
             transform: translateY(-8px);
             background: rgba(255,255,255,0.06);
             border-color: var(--accent);
+            box-shadow: 0 10px 30px -10px var(--accent);
         }
 
         .game-image {
@@ -142,7 +127,7 @@
             height: 100%;
             object-fit: cover;
             transition: all 0.3s;
-            opacity: 0.7;
+            opacity: 0.6;
         }
         .game-card:hover .game-image {
             opacity: 1;
@@ -155,7 +140,7 @@
             left: 0;
             right: 0;
             padding: 12px 10px;
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
             z-index: 2;
         }
 
@@ -183,10 +168,11 @@
         .status-msg {
             grid-column: 1 / -1;
             text-align: center;
-            padding: 60px;
+            padding: 80px 20px;
             opacity: 0.4;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             letter-spacing: 3px;
+            line-height: 2;
         }
     </style>
 </head>
@@ -197,22 +183,22 @@
 
 <div class="page">
     <div class="header-nav">
-        <button class="back-btn" onclick="history.back()">
-            <i class="fa-solid fa-chevron-left"></i> BACK
-        </button>
         <div class="logo-section">
             <h1 class="logo" id="logo">PHANTOM</h1>
-            <div class="page-subtitle">IMPORT ENGINE</div>
+            <div class="page-subtitle">PORTAL V2</div>
         </div>
     </div>
 
     <div class="search-container">
         <i class="fa-solid fa-magnifying-glass" id="searchIcon"></i>
-        <input type="text" class="search-input" id="gameSearch" placeholder="CONNECTING TO SOURCE..." oninput="filterGames()">
+        <input type="text" class="search-input" id="gameSearch" placeholder="IMPORTING GAMES..." oninput="filterGames()">
     </div>
 
     <div class="games-grid" id="gamesGrid">
-        <div class="status-msg">FETCHING LIVE GAME LIST...</div>
+        <div class="status-msg">
+            <i class="fa-solid fa-circle-notch fa-spin"></i><br>
+            INITIALIZING REMOTE FETCH...
+        </div>
     </div>
 </div>
 
@@ -221,14 +207,14 @@
 <script>
     let gamesData = [];
     
-    // The "URL thing" - pointing directly to the source repository API
+    // Remote Repository API
     const SOURCE_API = 'https://api.github.com/repos/bubbls/ugs-singlefile/contents/UGS-Files';
 
-    /* Launch logic: Fetch raw HTML and write to new window */
+    /* Launch logic */
     async function launchGame(downloadUrl, name) {
         try {
             const res = await fetch(downloadUrl);
-            if (!res.ok) throw new Error("Could not reach source");
+            if (!res.ok) throw new Error("Connection Refused");
             const html = await res.text();
             
             const win = window.open('about:blank', '_blank');
@@ -236,46 +222,43 @@
             win.document.write(html);
             win.document.close();
         } catch (err) {
-            alert("Failed to launch " + name + ": " + err.message);
+            console.error(err);
+            alert("Security block: This game cannot be launched from a local file. Use GitHub Pages.");
         }
     }
 
-    /* Name Normalizer: CamelCase -> Space Separated */
-    function normalizeName(filename) {
-        let name = filename.replace(/\.[^/.]+$/, ""); // Remove .html
-        name = name.replace(/([A-Z])/g, ' $1').trim(); // Add spaces
+    /* Name Formatting */
+    function formatName(filename) {
+        let name = filename.replace(/\.html$/, "");
+        // Add spaces between camelCase or PascalCase
+        name = name.replace(/([A-Z])/g, ' $1').trim();
         return name.toUpperCase();
-    }
-
-    /* Image System: Generates "Normal" visual cards */
-    function getGameImage(name) {
-        // High quality placeholder that matches the dark PHANTOM theme
-        return `https://placehold.co/400x400/111111/ffffff?text=${encodeURIComponent(name)}`;
     }
 
     /* Rendering */
     function renderGames(games) {
         const grid = document.getElementById('gamesGrid');
         if (!games || games.length === 0) {
-            grid.innerHTML = '<div class="status-msg">NO GAMES FOUND AT SOURCE</div>';
+            grid.innerHTML = '<div class="status-msg">NO GAMES DETECTED IN REPOSITORY</div>';
             return;
         }
 
         grid.innerHTML = games.map(file => {
-            const cleanName = normalizeName(file.name);
+            const displayName = formatName(file.name);
+            const placeholder = `https://placehold.co/400x400/111111/ffffff?text=${encodeURIComponent(displayName)}`;
             return `
-                <div class="game-card" onclick="launchGame('${file.download_url}', '${cleanName}')">
-                    <img src="${getGameImage(cleanName)}" alt="${cleanName}" class="game-image" loading="lazy">
+                <div class="game-card" onclick="launchGame('${file.download_url}', '${displayName}')">
+                    <img src="${placeholder}" alt="${displayName}" class="game-image">
                     <div class="game-overlay">
-                        <div class="game-name">${cleanName}</div>
-                        <div class="game-category">REMOTE CONTENT</div>
+                        <div class="game-name">${displayName}</div>
+                        <div class="game-category">REMOTE</div>
                     </div>
                 </div>
             `;
         }).join('');
     }
 
-    /* Filter */
+    /* Search Filter */
     function filterGames() {
         const query = document.getElementById('gameSearch').value.toLowerCase();
         const filtered = gamesData.filter(file => 
@@ -284,50 +267,60 @@
         renderGames(filtered);
     }
 
-    /* Live Fetch from the "Url Thing" */
+    /* Fetching Logic */
     async function loadGames() {
+        const grid = document.getElementById('gamesGrid');
         try {
             const res = await fetch(SOURCE_API);
+            
+            if (res.status === 403) {
+                throw new Error("GITHUB API RATE LIMIT EXCEEDED. WAIT A MINUTE AND REFRESH.");
+            }
+            if (!res.ok) throw new Error("HTTP ERROR: " + res.status);
+            
             const data = await res.json();
             
-            // Only import the .html game files
+            // Filter only HTML files
             gamesData = data.filter(item => item.name.endsWith('.html'));
             
-            document.getElementById('gameSearch').placeholder = `SEARCH ${gamesData.length} IMPORTED GAMES...`;
+            document.getElementById('gameSearch').placeholder = `SEARCH ${gamesData.length} GAMES...`;
             renderGames(gamesData);
         } catch (err) {
-            document.getElementById('gamesGrid').innerHTML = `
-                <div class="status-msg" style="color: #ff4444;">
-                    IMPORT FAILED: ${err.message}<br>
-                    <span style="font-size: 0.5rem; opacity: 0.6;">API LIMITS OR CONNECTION ERROR</span>
+            console.error(err);
+            grid.innerHTML = `
+                <div class="status-msg" style="color: #ff4444; opacity: 1;">
+                    <i class="fa-solid fa-triangle-exclamation"></i><br>
+                    FETCH FAILED<br>
+                    <span style="font-size: 0.5rem; letter-spacing: 1px; color: #fff;">
+                        ${err.message.includes('Failed to fetch') ? 'BROWSER SECURITY BLOCK. HOST THIS ON GITHUB PAGES TO FIX.' : err.message}
+                    </span>
                 </div>`;
         }
     }
 
-    /* Background & Effects */
+    /* Starfield & Visuals */
     function initVisuals() {
-        // Starfield
         const sc = document.getElementById("stars");
         for (let i = 0; i < 90; i++) {
             const s = document.createElement("div");
             s.className = "star";
-            s.style.width = s.style.height = `${Math.random() * 2 + 1}px`;
+            const size = Math.random() * 2 + 1;
+            s.style.width = s.style.height = `${size}px`;
             s.style.left = `${Math.random() * 100}%`;
             s.style.top = `${Math.random() * 120}%`;
             s.style.animationDuration = `${Math.random() * 80 + 80}s`;
             sc.appendChild(s);
         }
 
-        // Custom Cursor
         const dot = document.getElementById('phantom-dot');
         document.addEventListener('mousemove', e => {
             if(localStorage.getItem('phantom_cursor') === 'dot') {
-                const accent = localStorage.getItem('phantom_accent') || '#ff8c00';
+                const color = localStorage.getItem('phantom_accent') || '#ff8c00';
                 dot.style.display = 'block';
                 dot.style.left = e.clientX + 'px';
                 dot.style.top = e.clientY + 'px';
-                dot.style.background = accent;
-                dot.style.boxShadow = `0 0 15px ${accent}`;
+                dot.style.background = color;
+                dot.style.boxShadow = `0 0 15px ${color}`;
             }
         });
     }
