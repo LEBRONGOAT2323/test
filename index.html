@@ -19,7 +19,6 @@
             overflow-x: hidden;
         }
 
-        /* Starfield Background */
         #stars { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
         .star { position: absolute; background: rgba(255,255,255,0.7); border-radius: 50%; animation: drift linear infinite; }
         @keyframes drift { from { transform: translateY(0); } to { transform: translateY(-120vh); } }
@@ -172,7 +171,6 @@
             opacity: 0.4;
             font-size: 0.75rem;
             letter-spacing: 3px;
-            line-height: 2;
         }
     </style>
 </head>
@@ -185,19 +183,19 @@
     <div class="header-nav">
         <div class="logo-section">
             <h1 class="logo" id="logo">PHANTOM</h1>
-            <div class="page-subtitle">PORTAL V2</div>
+            <div class="page-subtitle">SECURE ACCESS</div>
         </div>
     </div>
 
     <div class="search-container">
         <i class="fa-solid fa-magnifying-glass" id="searchIcon"></i>
-        <input type="text" class="search-input" id="gameSearch" placeholder="IMPORTING GAMES..." oninput="filterGames()">
+        <input type="text" class="search-input" id="gameSearch" placeholder="ACCESSING SOURCE..." oninput="filterGames()">
     </div>
 
     <div class="games-grid" id="gamesGrid">
         <div class="status-msg">
-            <i class="fa-solid fa-circle-notch fa-spin"></i><br>
-            INITIALIZING REMOTE FETCH...
+            <i class="fa-solid fa-circle-notch fa-spin"></i><br><br>
+            INITIALIZING FETCH...
         </div>
     </div>
 </div>
@@ -207,57 +205,65 @@
 <script>
     let gamesData = [];
     
-    // Remote Repository API
+    // Master Source Repository API
     const SOURCE_API = 'https://api.github.com/repos/bubbls/ugs-singlefile/contents/UGS-Files';
 
-    /* Launch logic */
-    async function launchGame(downloadUrl, name) {
+    /* Launch logic: Fetches and writes HTML to a new clean window */
+    async function launchGame(downloadUrl) {
         try {
             const res = await fetch(downloadUrl);
-            if (!res.ok) throw new Error("Connection Refused");
+            if (!res.ok) return;
             const html = await res.text();
             
             const win = window.open('about:blank', '_blank');
-            win.document.open();
-            win.document.write(html);
-            win.document.close();
+            if (win) {
+                win.document.open();
+                win.document.write(html);
+                win.document.close();
+            }
         } catch (err) {
-            alert("Security block: This game cannot be launched from a local file. Use GitHub Pages.");
+            // Fails silently to comply with no-cl/no-alert rules
         }
     }
 
-    /* Name Formatting */
+    /* Name Formatting: Strips "CL" prefix and formats CamelCase */
     function formatName(filename) {
+        // 1. Remove file extension
         let name = filename.replace(/\.html$/, "");
-        // Add spaces between camelCase or PascalCase
+        
+        // 2. Strip "CL" or "CL_" prefix (common in this repository's naming convention)
+        name = name.replace(/^CL_?/i, "");
+        
+        // 3. Insert spaces before capital letters (CamelCase to Space Case)
         name = name.replace(/([A-Z])/g, ' $1').trim();
+        
         return name.toUpperCase();
     }
 
-    /* Rendering */
+    /* Rendering: Builds the game cards */
     function renderGames(games) {
         const grid = document.getElementById('gamesGrid');
         if (!games || games.length === 0) {
-            grid.innerHTML = '<div class="status-msg">NO GAMES DETECTED IN REPOSITORY</div>';
+            grid.innerHTML = '<div class="status-msg">NO GAMES DETECTED</div>';
             return;
         }
 
         grid.innerHTML = games.map(file => {
             const displayName = formatName(file.name);
-            const placeholder = `https://placehold.co/400x400/111111/ffffff?text=${encodeURIComponent(displayName)}`;
+            const img = `https://placehold.co/400x400/111111/ffffff?text=${encodeURIComponent(displayName)}`;
             return `
-                <div class="game-card" onclick="launchGame('${file.download_url}', '${displayName}')">
-                    <img src="${placeholder}" alt="${displayName}" class="game-image">
+                <div class="game-card" onclick="launchGame('${file.download_url}')">
+                    <img src="${img}" alt="${displayName}" class="game-image">
                     <div class="game-overlay">
                         <div class="game-name">${displayName}</div>
-                        <div class="game-category">REMOTE</div>
+                        <div class="game-category">GAME</div>
                     </div>
                 </div>
             `;
         }).join('');
     }
 
-    /* Search Filter */
+    /* Search Filter: Filters the imported game list */
     function filterGames() {
         const query = document.getElementById('gameSearch').value.toLowerCase();
         const filtered = gamesData.filter(file => 
@@ -266,20 +272,16 @@
         renderGames(filtered);
     }
 
-    /* Fetching Logic */
+    /* Dynamic Fetch: Connects to the "URL thing" and imports games */
     async function loadGames() {
         const grid = document.getElementById('gamesGrid');
         try {
             const res = await fetch(SOURCE_API);
-            
-            if (res.status === 403) {
-                throw new Error("GITHUB API RATE LIMIT EXCEEDED. WAIT A MINUTE AND REFRESH.");
-            }
-            if (!res.ok) throw new Error("HTTP ERROR: " + res.status);
+            if (!res.ok) throw new Error();
             
             const data = await res.json();
             
-            // Filter only HTML files
+            // Only import files with the .html extension
             gamesData = data.filter(item => item.name.endsWith('.html'));
             
             document.getElementById('gameSearch').placeholder = `SEARCH ${gamesData.length} GAMES...`;
@@ -287,16 +289,13 @@
         } catch (err) {
             grid.innerHTML = `
                 <div class="status-msg" style="color: #ff4444; opacity: 1;">
-                    <i class="fa-solid fa-triangle-exclamation"></i><br>
-                    FETCH FAILED<br>
-                    <span style="font-size: 0.5rem; letter-spacing: 1px; color: #fff;">
-                        ${err.message.includes('Failed to fetch') ? 'BROWSER SECURITY BLOCK. HOST THIS ON GITHUB PAGES TO FIX.' : err.message}
-                    </span>
+                    CONNECTION FAILED<br>
+                    <span style="font-size: 0.5rem;">USE GITHUB PAGES OR CHECK NETWORK</span>
                 </div>`;
         }
     }
 
-    /* Starfield & Visuals */
+    /* Visuals: Starfield and Phantom Dot Cursor */
     function initVisuals() {
         const sc = document.getElementById("stars");
         for (let i = 0; i < 90; i++) {
@@ -323,11 +322,15 @@
         });
     }
 
+    /* App Initialization */
     (function init() {
         initVisuals();
         const accent = localStorage.getItem('phantom_accent') || '#ff8c00';
         document.documentElement.style.setProperty('--accent', accent);
-        document.getElementById('logo').style.textShadow = `0 0 15px ${accent}88`;
+        
+        const logo = document.getElementById('logo');
+        if (logo) logo.style.textShadow = `0 0 15px ${accent}88`;
+        
         loadGames();
     })();
 </script>
