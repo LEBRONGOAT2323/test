@@ -1,21 +1,8 @@
-<?xml version="1.1" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-
-  <foreignObject x="0" y="0" width="100%" height="100%">
+  <foreignObject width="100%" height="100%">
     <div xmlns="http://www.w3.org/1999/xhtml">
 
-<![CDATA[
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHANTOM</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
-    <style>
-        :root { --accent: #ff8c00; }
+      <style>:root { --accent: #ff8c00; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
@@ -179,12 +166,9 @@
             opacity: 0.4;
             font-size: 0.75rem;
             letter-spacing: 3px;
-        }
-    </style>
-</head>
-<body>
+        }</style>
 
-<div id="bottom-glow"></div>
+     <div id="bottom-glow"></div>
 <div id="stars"></div>
 
 <div class="page" id="mainPage">
@@ -210,8 +194,7 @@
 
 <div id="phantom-dot"></div>
 
-<script>
-    let gamesData = [];
+      <script> let gamesData = [];
     const SOURCE_API = 'https://api.github.com/repos/bubbls/ugs-singlefile/contents/UGS-Files';
 
     /* Name Formatting: Strips "CL" prefix and formats CamelCase */
@@ -339,11 +322,8 @@
         if (logo) logo.style.textShadow = `0 0 15px ${accent}88`;
         
         loadGames();
-    })();
-</script>
-</body>
-</html>
-]]>
+    })();</script>
+
     </div>
   </foreignObject>
 </svg>
