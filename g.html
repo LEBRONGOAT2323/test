@@ -460,7 +460,11 @@ fetch("version.json")
     });
 
 function openGame(url) {
-  window.open(url, "_blank");
+  const match = url.match(/\/(\d+)\.html$/);
+  if (!match) return;
+
+  const id = match[1];
+  window.location.href = `/test/g/proxy.html?id=${id}`;
 }
 
     
