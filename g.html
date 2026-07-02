@@ -460,9 +460,14 @@ fetch("version.json")
     });
 
 function openGame(url) {
-    const win = window.open();
+  const match = url.match(/\/(\d+)\.html$/);
+  if (!match) return;
 
-    
+  const id = match[1];
+  window.location.href = `/g/proxy.html?id=${id}`;
+}
+
+
     win.document.write(`
         <!DOCTYPE html>
         <html>
@@ -490,8 +495,7 @@ function openGame(url) {
         </html>
     `);
 
-    win.document.close();
-}   
+    win.document.close();  
 </script>
 </body>
 </html>
