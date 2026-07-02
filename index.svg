@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 1000 700">
+
+  <foreignObject x="0" y="0" width="100%" height="100%">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+
+      <style><![CDATA[
+        :root { --accent: #ff8c00; }
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: 'Orbitron', sans-serif;
+          background: #000;
+          color: white;
+          min-height: 100vh;
+          overflow-x: hidden;
+        }
+
+        #stars {
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+        }
+
+        .star {
+          position: absolute;
+          background: rgba(255,255,255,0.7);
+          border-radius: 50%;
+          animation: drift linear infinite;
+        }
+
+        @keyframes drift {
+          from { transform: translateY(0); }
+          to { transform: translateY(-120vh); }
+        }
+
+        .page {
+          position: relative;
+          z-index: 1;
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 40px 24px 80px;
+        }
+
+        .logo {
+          font-size: 3rem;
+          font-weight: 900;
+          letter-spacing: 8px;
+          text-shadow: 0 0 15px var(--accent);
+        }
+
+        .subtitle {
+          opacity: 0.4;
+          font-size: 0.7rem;
+          letter-spacing: 4px;
+        }
+
+        .search-input {
+          width: 100%;
+          margin-top: 20px;
+          padding: 12px 16px;
+          border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.2);
+          background: rgba(255,255,255,0.05);
+          color: white;
+          outline: none;
+        }
+
+        .games-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+          gap: 16px;
+          margin-top: 30px;
+        }
+
+        .card {
+          aspect-ratio: 1;
+          background: rgba(255,255,255,0.05);
+          border-radius: 16px;
+          padding: 10px;
+          cursor: pointer;
+          transition: 0.3s;
+          border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .card:hover {
+          transform: translateY(-6px);
+          border-color: var(--accent);
+        }
+
+        .name {
+          font-size: 0.7rem;
+          margin-top: 10px;
+          text-transform: uppercase;
+        }
+
+        .loading {
+          text-align: center;
+          opacity: 0.5;
+          padding: 60px;
+        }
+
+      ]]></style>
+
+      <div id="stars"></div>
+
+      <div class="page">
+        <div class="logo">PHANTOM</div>
+        <div class="subtitle">SECURE ACCESS</div>
+
+        <input class="search-input" id="search" placeholder="CONNECTING..." oninput="filterGames()" />
+
+        <div class="games-grid" id="grid">
+          <div class="loading">FETCHING REPOSITORY...</div>
+        </div>
+      </div>
+
+      <script><![CDATA[
+        let games = [];
+        const API = "https://api.github.com/repos/bubbls/ugs-singlefile/contents/UGS-Files";
+
+        function formatName(n){
+          let name = n.replace(".html","");
+          name = name.replace(/^CL_?/i,"");
+          name = name.replace(/([A-Z])/g," $1").trim();
+          return name.toUpperCase();
+        }
+
+        function render(list){
+          const g = document.getElementById("grid");
+          if(!list.length){
+            g.innerHTML = "<div class='loading'>NO GAMES</div>";
+            return;
+          }
+
+          g.innerHTML = list.map(f => {
+            const name = formatName(f.name);
+            return `
+              <div class="card" onclick="launch('${f.download_url}','${name}')">
+                <div class="name">${name}</div>
+              </div>
+            `;
+          }).join("");
+        }
+
+        function filterGames(){
+          const q = document.getElementById("search").value.toLowerCase();
+          render(games.filter(g => g.name.toLowerCase().includes(q)));
+        }
+
+        function launch(url,name){
+          document.body.innerHTML = "";
+          document.body.style.background = "#000";
+          document.title = name;
+
+          const iframe = document.createElement("iframe");
+          iframe.src = url;
+          iframe.style = "position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;";
+          document.body.appendChild(iframe);
+        }
+
+        async function load(){
+          try{
+            const res = await fetch(API);
+            const data = await res.json();
+            games = data.filter(x => x.name.endsWith(".html"));
+            document.getElementById("search").placeholder =
+              "SEARCH " + games.length + " GAMES...";
+            render(games);
+          }catch(e){
+            document.getElementById("grid").innerHTML =
+              "<div class='loading'>FETCH FAILED</div>";
+          }
+        }
+
+        function stars(){
+          const s = document.getElementById("stars");
+          for(let i=0;i<80;i++){
+            const d = document.createElement("div");
+            d.className="star";
+            d.style.width=d.style.height=Math.random()*2+"px";
+            d.style.left=Math.random()*100+"%";
+            d.style.top=Math.random()*100+"%";
+            d.style.animationDuration=(50+Math.random()*80)+"s";
+            s.appendChild(d);
+          }
+        }
+
+        (function init(){
+          stars();
+          const a = localStorage.getItem("phantom_accent")||"#ff8c00";
+          document.documentElement.style.setProperty("--accent",a);
+          load();
+        })();
+      ]]></script>
+
+    </div>
+  </foreignObject>
+</svg>
