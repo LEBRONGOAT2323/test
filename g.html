@@ -369,7 +369,7 @@ function renderGames(games) {
     }
 
     grid.innerHTML = filteredGames.map(game => `
-        <a href="javascript:void(0)" class="game-card" data-name="${game.name}" onclick="openGame('${game.url}')">
+        <a href="javascript:void(0)" class="game-card" data-name="${game.name}" onclick="openGame(${g.id})">
             <img src="${game.image}" alt="${game.name}" class="game-image" onerror="this.src='https://via.placeholder.com/200x200/1a1a1a/ffffff?text=${encodeURIComponent(game.name.charAt(0))}'">
             <div class="game-overlay">
                 <div class="game-name">${game.name}</div>
@@ -399,13 +399,13 @@ async function loadGames() {
         const data = await res.json();
 
         const games = data
-            .filter(g => g.id >= 0) // removes suggestion/ads entry
-            .map(g => ({
-                name: g.name,
-                category: g.category || "Game",
-                image: (g.cover || "").replace("{COVER_URL}", COVER_URL),
-                url: (g.url || "").replace("{HTML_URL}", HTML_URL)
-            }));
+  .filter(g => g.id >= 0)
+  .map(g => ({
+      id: g.id,
+      name: g.name,
+      category: g.category || "Game",
+      image: (g.cover || "").replace("{COVER_URL}", COVER_URL)
+  }));
 
         gamesData = games;
         renderGames(gamesData);
@@ -459,14 +459,9 @@ fetch("version.json")
         document.getElementById("version").textContent = "PHANTOM";
     });
 
-function openGame(url) {
-  const match = url.match(/\/(\d+)\.html$/);
-  if (!match) return;
-
-  const id = match[1];
-  window.location.href = `/test/g/proxy.html?id=${id}`;
+function openGame(id) {
+    window.location.href = `${window.location.origin}/test/g/proxy.html?id=${id}`;
 }
-
     
 </script>
 </body>
