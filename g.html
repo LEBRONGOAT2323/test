@@ -369,7 +369,7 @@ function renderGames(games) {
     }
 
     grid.innerHTML = filteredGames.map(game => `
-        <a href="${game.url}" class="game-card" data-name="${game.name}">
+        <a href="javascript:void(0)" class="game-card" data-name="${game.name}" onclick="openGame('${game.url}')">
             <img src="${game.image}" alt="${game.name}" class="game-image" onerror="this.src='https://via.placeholder.com/200x200/1a1a1a/ffffff?text=${encodeURIComponent(game.name.charAt(0))}'">
             <div class="game-overlay">
                 <div class="game-name">${game.name}</div>
@@ -458,6 +458,39 @@ fetch("version.json")
     .catch(() => {
         document.getElementById("version").textContent = "PHANTOM";
     });
+
+function openGame(url) {
+    const win = window.open();
+
+    win.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>PHANTOM</title>
+            <style>
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    width: 100%;
+                    height: 100%;
+                    overflow: hidden;
+                    background: black;
+                }
+                iframe {
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                }
+            </style>
+        </head>
+        <body>
+            <iframe src="${url}" allowfullscreen></iframe>
+        </body>
+        </html>
+    `);
+
+    win.document.close();
+}   
 </script>
 </body>
 </html>
