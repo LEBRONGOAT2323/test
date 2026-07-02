@@ -460,42 +460,10 @@ fetch("version.json")
     });
 
 function openGame(url) {
-  const match = url.match(/\/(\d+)\.html$/);
-  if (!match) return;
-
-  const id = match[1];
-  window.location.href = `/g/proxy.html?id=${id}`;
+  window.open(url, "_blank");
 }
 
-
-    win.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>PHANTOM</title>
-            <style>
-                html, body {
-                    margin: 0;
-                    padding: 0;
-                    width: 100%;
-                    height: 100%;
-                    overflow: hidden;
-                    background: black;
-                }
-                iframe {
-                    width: 100%;
-                    height: 100%;
-                    border: none;
-                }
-            </style>
-        </head>
-        <body>
-            <iframe src="${url}" allowfullscreen></iframe>
-        </body>
-        </html>
-    `);
-
-    win.document.close();  
+    
 </script>
 </body>
 </html>
