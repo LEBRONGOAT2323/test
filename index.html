@@ -179,7 +179,7 @@
 <div id="bottom-glow"></div>
 <div id="stars"></div>
 
-<div class="page">
+<div class="page" id="mainPage">
     <div class="header-nav">
         <div class="logo-section">
             <h1 class="logo" id="logo">PHANTOM</h1>
@@ -189,13 +189,13 @@
 
     <div class="search-container">
         <i class="fa-solid fa-magnifying-glass" id="searchIcon"></i>
-        <input type="text" class="search-input" id="gameSearch" placeholder="ACCESSING SOURCE..." oninput="filterGames()">
+        <input type="text" class="search-input" id="gameSearch" placeholder="CONNECTING..." oninput="filterGames()">
     </div>
 
     <div class="games-grid" id="gamesGrid">
         <div class="status-msg">
             <i class="fa-solid fa-circle-notch fa-spin"></i><br><br>
-            INITIALIZING FETCH...
+            FETCHING REPOSITORY...
         </div>
     </div>
 </div>
@@ -204,47 +204,49 @@
 
 <script>
     let gamesData = [];
-    
-    // Master Source Repository API
     const SOURCE_API = 'https://api.github.com/repos/bubbls/ugs-singlefile/contents/UGS-Files';
-
-    /* Launch logic: Replaces the current tab with the game source */
-    async function launchGame(downloadUrl, name) {
-        try {
-            const res = await fetch(downloadUrl);
-            if (!res.ok) return;
-            const html = await res.text();
-            
-            // Wipe current document and write game code
-            document.open();
-            document.write(html);
-            document.close();
-            
-            // Set the tab name to the game title
-            document.title = name;
-        } catch (err) {
-            // Fails silently to comply with no-cl/no-alert rules
-        }
-    }
 
     /* Name Formatting: Strips "CL" prefix and formats CamelCase */
     function formatName(filename) {
         let name = filename.replace(/\.html$/, "");
-        
-        // Strip "CL" or "CL_" prefix found in repository naming
         name = name.replace(/^CL_?/i, "");
-        
-        // CamelCase to Space Case
         name = name.replace(/([A-Z])/g, ' $1').trim();
-        
         return name.toUpperCase();
     }
 
-    /* Rendering: Builds the game cards */
+    /* Launch logic: Replaces tab content with the game in an iframe */
+    function launchGame(downloadUrl, name) {
+        // Change the tab name
+        document.title = name;
+
+        // Wipe the page and replace with full-screen iframe
+        document.body.innerHTML = '';
+        document.body.style.margin = '0';
+        document.body.style.padding = '0';
+        document.body.style.overflow = 'hidden';
+        document.body.style.backgroundColor = '#000';
+
+        // Add metadata to head
+        document.head.innerHTML = `<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${name}</title>`;
+
+        const iframe = document.createElement('iframe');
+        iframe.src = downloadUrl;
+        iframe.style.position = 'fixed';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        iframe.style.width = '100vw';
+        iframe.style.height = '100vh';
+        iframe.style.border = 'none';
+        iframe.style.zIndex = '999999';
+        
+        document.body.appendChild(iframe);
+    }
+
+    /* Rendering */
     function renderGames(games) {
         const grid = document.getElementById('gamesGrid');
         if (!games || games.length === 0) {
-            grid.innerHTML = '<div class="status-msg">NO GAMES DETECTED</div>';
+            grid.innerHTML = '<div class="status-msg">NO GAMES FOUND</div>';
             return;
         }
 
@@ -272,7 +274,7 @@
         renderGames(filtered);
     }
 
-    /* Dynamic Fetch: Imports games from URL */
+    /* Fetch Games from Source URL */
     async function loadGames() {
         const grid = document.getElementById('gamesGrid');
         try {
@@ -280,8 +282,6 @@
             if (!res.ok) throw new Error();
             
             const data = await res.json();
-            
-            // Only import .html files
             gamesData = data.filter(item => item.name.endsWith('.html'));
             
             document.getElementById('gameSearch').placeholder = `SEARCH ${gamesData.length} GAMES...`;
@@ -289,20 +289,19 @@
         } catch (err) {
             grid.innerHTML = `
                 <div class="status-msg" style="color: #ff4444; opacity: 1;">
-                    CONNECTION FAILED<br>
-                    <span style="font-size: 0.5rem;">USE GITHUB PAGES OR CHECK NETWORK</span>
+                    FETCH FAILED<br>
+                    <span style="font-size: 0.5rem;">CHECK REPOSITORY CONNECTION</span>
                 </div>`;
         }
     }
 
-    /* Visuals */
+    /* Visual Background & Cursor */
     function initVisuals() {
         const sc = document.getElementById("stars");
         for (let i = 0; i < 90; i++) {
             const s = document.createElement("div");
             s.className = "star";
-            const size = Math.random() * 2 + 1;
-            s.style.width = s.style.height = `${size}px`;
+            s.style.width = s.style.height = `${Math.random() * 2 + 1}px`;
             s.style.left = `${Math.random() * 100}%`;
             s.style.top = `${Math.random() * 120}%`;
             s.style.animationDuration = `${Math.random() * 80 + 80}s`;
@@ -322,6 +321,7 @@
         });
     }
 
+    /* Initialization */
     (function init() {
         initVisuals();
         const accent = localStorage.getItem('phantom_accent') || '#ff8c00';
