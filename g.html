@@ -339,13 +339,33 @@ async function loadGames() {
         const data = await res.json();
 
         gamesData = data.map(g => {
-            // Smart URL construction
-            let finalUrl = g.url;
-            if (!finalUrl.startsWith('http')) {
-                // Ensure it has .html extension if missing
-                const path = finalUrl.endsWith('.html') ? finalUrl : finalUrl + '.html';
-                finalUrl = `https://freebuisness.github.io/html/${path}`;
-            }
+
+    let base = "https://freebuisness.github.io/html";
+
+    let htmlBase = "https://cdn.jsdelivr.net/gh/freebuisness/html@main";
+
+    let finalUrl = g.url;
+
+    // 🔥 CRITICAL: replace template token FIRST
+    if (finalUrl.includes("{HTML_URL}")) {
+        finalUrl = finalUrl.replace("{HTML_URL}", htmlBase);
+    }
+
+    // fallback for non-templated URLs
+    if (!finalUrl.startsWith("http")) {
+        finalUrl = `${base}/${finalUrl.endsWith('.html') ? finalUrl : finalUrl + '.html'}`;
+    }
+
+    return {
+        id: g.id,
+        name: g.name,
+        category: g.category || "GAMES",
+        image: g.cover
+            ? g.cover.replace("{COVER_URL}", "https://cdn.jsdelivr.net/gh/freebuisness/covers@main")
+            : "https://via.placeholder.com/200x200?text=NO+IMAGE",
+        url: finalUrl
+    };
+});
 
             return {
                 id: g.id,
