@@ -393,25 +393,40 @@ function filterGames() {
     renderGames(filtered);
 }
 
-function openGame(url) {
+async function openGame(url) {
     currentUrl = url;
+
     const viewer = document.getElementById('game-viewer');
     const frame = document.getElementById('game-frame');
 
     viewer.style.display = 'block';
     document.body.style.overflow = 'hidden';
-    
-    // Clear previous content
+
+    // reset first
     frame.src = "about:blank";
-    
-    // Slight delay to ensure UI updates before heavy iframe load
-    setTimeout(() => {
-        frame.src = url;
-    }, 100);
+
+    try {
+        // 🔥 FEMBOY-PROXY STYLE LOADER
+        const res = await fetch(url);
+        const html = await res.text();
+
+        const blob = new Blob([html], { type: "text/html" });
+        const blobUrl = URL.createObjectURL(blob);
+
+        frame.src = blobUrl;
+
+        frame.onload = () => {
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        };
+
+    } catch (err) {
+        console.error("Game load failed:", err);
+        frame.src = url; // fallback
+    }
 
     try {
         history.pushState({ viewingGame: true }, "");
-    } catch(e) { /* Local files don't allow pushState */ }
+    } catch (e) {}
 }
 
 function openExternal() {
