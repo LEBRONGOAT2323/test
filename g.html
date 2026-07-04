@@ -256,7 +256,7 @@ body {
             <i class="fa-solid fa-xmark"></i> EXIT
         </button>
         <button class="viewer-btn" id="external-link-btn" onclick="openExternal()">
-            <i class="fa-solid fa-arrow-up-right-from-square"></i> NEW TAB
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> DOWNLOAD GAME
         </button>
     </div>
     <iframe id="game-frame" allow="fullscreen; autoplay; gamepad; focus-without-user-activation" src="about:blank"></iframe>
@@ -279,7 +279,7 @@ body {
     </div>
 
     <div class="games-grid" id="gamesGrid">
-        <div class="loading-msg">CONNECTING TO ZONES...</div>
+        <div class="loading-msg">CONNECTING TO GAMES...</div>
     </div>
 </div>
 
@@ -325,11 +325,35 @@ function applyAccent(color) {
 
     let dynStyle = document.getElementById('games-dynamic-style');
     if (!dynStyle) { dynStyle = document.createElement('style'); dynStyle.id = 'games-dynamic-style'; document.head.appendChild(dynStyle); }
-    dynStyle.textContent = `
-        .game-card { border: 1px solid ${rgba(color,0.15)}; }
-        .game-card:hover { border-color:${rgba(color,0.50)}; box-shadow:0 0 25px ${rgba(color,0.20)}; }
-        .search-input:focus { border-color: ${rgba(color, 0.40)}; box-shadow: 0 0 15px ${rgba(color, 0.10)}; }
-    `;
+    const hoverEnabled =
+localStorage.getItem("phantom_game_hover")==="true";
+
+dynStyle.textContent = `
+.game-card{
+    border:1px solid ${rgba(color,0.15)};
+}
+
+.game-card:hover{
+    border-color:${rgba(color,0.50)};
+    box-shadow:0 0 25px ${rgba(color,0.20)};
+}
+
+.search-input:focus{
+    border-color:${rgba(color,0.40)};
+    box-shadow:0 0 15px ${rgba(color,0.10)};
+}
+
+${
+hoverEnabled
+?`
+.game-card:hover .game-name{
+    color:${color};
+    text-shadow:0 0 8px ${rgba(color,.45)};
+}
+`
+:""
+}
+`;
 }
  
 /* Initialization */
@@ -385,7 +409,14 @@ function renderGames(games) {
         <div class="game-card" onclick="openGame('${game.url}')">
             <img src="${game.image}" alt="${game.name}" class="game-image" onerror="this.src='https://via.placeholder.com'">
             <div class="game-overlay">
-                <div class="game-name">${game.name}</div>
+                <div class="game-name"
+                style="${
+                localStorage.getItem('phantom_game_hover')==='true'
+                ?`transition:.3s;`
+                :''
+                }">
+                ${game.name}
+                </div>
                 <div class="game-category">${game.category}</div>
             </div>
         </div>
@@ -409,11 +440,11 @@ async function openGame(url) {
     viewer.style.display = 'block';
     document.body.style.overflow = 'hidden';
 
-    // reset first
+   
     frame.src = "about:blank";
 
     try {
-        // 🔥 FEMBOY-PROXY STYLE LOADER
+        
         const res = await fetch(url);
         const html = await res.text();
 
@@ -453,12 +484,107 @@ window.onpopstate = function() {
     if (document.getElementById('game-viewer').style.display === 'block') closeGame();
 };
 
-/* Start */
-(function() {
-    const accent = localStorage.getItem('phantom_accent') || '#ff8c00';
+(function initSettings() {
+
+    /* Accent */
+    const accent = localStorage.getItem("phantom_accent") || "#ff8c00";
     applyAccent(accent);
+
+    /* Wallpaper */
+    const wallpaper = localStorage.getItem("phantom_wallpaper");
+    if (wallpaper) {
+        document.body.style.backgroundImage = `url('${wallpaper}')`;
+        document.body.style.backgroundSize = "cover";
+        document.body.style.backgroundPosition = "center";
+    }
+
+    /* Cursor */
+    const cursor = localStorage.getItem("phantom_cursor") || "default";
+
+    if (cursor === "dot") {
+        const dot = document.getElementById("phantom-dot");
+
+        dot.style.display = "block";
+        document.documentElement.style.cursor = "none";
+
+        const style = document.createElement("style");
+        style.textContent = "*{cursor:none!important}";
+        document.head.appendChild(style);
+
+        dot.style.background = accent;
+        dot.style.boxShadow =
+            `0 0 6px ${accent},
+             0 0 14px ${accent},
+             0 0 28px ${accent}`;
+
+        document.addEventListener("mousemove", e=>{
+            dot.style.left=e.clientX+"px";
+            dot.style.top=e.clientY+"px";
+        });
+
+    } else {
+        document.documentElement.style.cursor =
+            cursor === "default" ? "" : cursor;
+    }
+
+    /* Tab Cloak */
+    if (localStorage.getItem("phantom_cloak_on")==="true"){
+
+        const title =
+            localStorage.getItem("phantom_cloak_name");
+
+        const icon =
+            localStorage.getItem("phantom_cloak_icon");
+
+        if(title) document.title = title;
+
+        if(icon){
+            let link=document.querySelector("link[rel='icon']");
+            if(!link){
+                link=document.createElement("link");
+                link.rel="icon";
+                document.head.appendChild(link);
+            }
+            link.href=icon;
+        }
+    }
+
+    /* Panic Key */
+    if(localStorage.getItem("phantom_panic_on")==="true"){
+
+        document.addEventListener("keydown",e=>{
+
+            const key=
+                localStorage.getItem("phantom_panickey");
+
+            const url=
+                localStorage.getItem("phantom_panicurl") ||
+                "https://google.com";
+
+            if(key && e.key===key){
+                location.href=url;
+            }
+
+        });
+
+    }
+
     loadGames();
+
 })();
+
+
+fetch("version.json")
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("version").textContent =
+            `PHANTOM ${data.version}`;
+    })
+    .catch(() => {
+        document.getElementById("version").textContent =
+            "PHANTOM";
+    });
+
 </script>
 </body>
 </html>
