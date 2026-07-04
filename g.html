@@ -6,6 +6,8 @@
 <title>PHANTOM</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <style>
 :root { --accent: #ff8c00; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -259,7 +261,11 @@ body {
             <i class="fa-solid fa-arrow-up-right-from-square"></i> DOWNLOAD GAME
         </button>
     </div>
-    <iframe id="game-frame" allow="fullscreen; autoplay; gamepad; focus-without-user-activation" src="about:blank"></iframe>
+    <iframe
+    id="game-frame"
+    loading="eager"
+    allow="fullscreen; autoplay; gamepad">
+</iframe>
 </div>
 
 <div class="page">
@@ -292,7 +298,7 @@ let currentUrl = "";
 
 /* Starfield */
 const sc = document.getElementById("stars");
-for (let i = 0; i < 90; i++) {
+for (let i = 0; i < 35; i++) {
     const s = document.createElement("div");
     s.className = "star";
     const size = Math.random() * 2 + 1;
@@ -431,40 +437,15 @@ function filterGames() {
     renderGames(filtered);
 }
 
-async function openGame(url) {
+function openGame(url) {
     currentUrl = url;
 
-    const viewer = document.getElementById('game-viewer');
-    const frame = document.getElementById('game-frame');
+    document.getElementById("game-viewer").style.display = "block";
+    document.body.style.overflow = "hidden";
 
-    viewer.style.display = 'block';
-    document.body.style.overflow = 'hidden';
+    document.getElementById("game-frame").src = url;
 
-   
-    frame.src = "about:blank";
-
-    try {
-        
-        const res = await fetch(url);
-        const html = await res.text();
-
-        const blob = new Blob([html], { type: "text/html" });
-        const blobUrl = URL.createObjectURL(blob);
-
-        frame.src = blobUrl;
-
-        frame.onload = () => {
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-        };
-
-    } catch (err) {
-        console.error("Game load failed:", err);
-        frame.src = url; // fallback
-    }
-
-    try {
-        history.pushState({ viewingGame: true }, "");
-    } catch (e) {}
+    history.pushState({ viewingGame: true }, "");
 }
 
 
