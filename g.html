@@ -340,43 +340,30 @@ async function loadGames() {
 
         gamesData = data.map(g => {
 
-    let base = "https://freebuisness.github.io/html";
+    const HTML_BASE = "https://cdn.jsdelivr.net/gh/freebuisness/html@main";
+    const COVER_BASE = "https://cdn.jsdelivr.net/gh/freebuisness/covers@main";
 
-    let htmlBase = "https://cdn.jsdelivr.net/gh/freebuisness/html@main";
+    let finalUrl = g.url || "";
 
-    let finalUrl = g.url;
+    // Handle template URLs like "{HTML_URL}/0.html"
+    finalUrl = finalUrl.replace(/\{HTML_URL\}/g, HTML_BASE);
 
-    // 🔥 CRITICAL: replace template token FIRST
-    if (finalUrl.includes("{HTML_URL}")) {
-        finalUrl = finalUrl.replace("{HTML_URL}", htmlBase);
-    }
-
-    // fallback for non-templated URLs
+    // Handle plain numeric ids like "0"
     if (!finalUrl.startsWith("http")) {
-        finalUrl = `${base}/${finalUrl.endsWith('.html') ? finalUrl : finalUrl + '.html'}`;
+        finalUrl = `${HTML_BASE}/${finalUrl.replace(/^\/+/, "")}`;
+        if (!finalUrl.endsWith(".html")) {
+            finalUrl += ".html";
+        }
     }
 
     return {
         id: g.id,
         name: g.name,
         category: g.category || "GAMES",
-        image: g.cover
-            ? g.cover.replace("{COVER_URL}", "https://cdn.jsdelivr.net/gh/freebuisness/covers@main")
-            : "https://via.placeholder.com/200x200?text=NO+IMAGE",
+        image: (g.cover || "").replace(/\{COVER_URL\}/g, COVER_BASE),
         url: finalUrl
     };
 });
-
-            return {
-                id: g.id,
-                name: g.name,
-                category: g.category || "ARCADE",
-                image: g.cover 
-                    ? g.cover.replace("{COVER_URL}", "https://cdn.jsdelivr.net/gh/freebuisness/covers@main")
-                    : "https://via.placeholder.com/200x200?text=NO+IMAGE",
-                url: finalUrl
-            };
-        });
 
         renderGames(gamesData);
     } catch (err) {
